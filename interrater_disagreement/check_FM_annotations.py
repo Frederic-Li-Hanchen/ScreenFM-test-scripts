@@ -223,9 +223,9 @@ if __name__ == '__main__':
     # res_path = r'./042 – 20220519T090912Z – Comments Friederike Pagel - Analysis.csv'
 
     # Compute tables of events
-    annotations1 = list_annotated_events(file_path1,res_path='./interrater_disagreement/test/Friederike_s036.csv')
-    annotations2 = list_annotated_events(file_path2,res_path='./interrater_disagreement/test/Andrea_s036.csv')
-    annotations3 = list_annotated_events(file_path3,res_path='./interrater_disagreement/test/Margot_s036.csv')
+    annotations1 = list_annotated_events(file_path1,res_path='./interrater_disagreement/annotations/Friederike_s036.csv')
+    annotations2 = list_annotated_events(file_path2,res_path='./interrater_disagreement/annotations/Andrea_s036.csv')
+    annotations3 = list_annotated_events(file_path3,res_path='./interrater_disagreement/annotations/Margot_s036.csv')
 
     # Plot the events
     #plot_annotated_events(annotations1, annotations2, save_path='', title='')

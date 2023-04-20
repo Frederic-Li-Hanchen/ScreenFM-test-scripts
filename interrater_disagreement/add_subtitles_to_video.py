@@ -36,9 +36,14 @@ def add_subtitles(
     # Create a list of events to be shown as subtitle
     print('Creating subtitles ...')
     start = time()
-    subtitles = pd.DataFrame(columns=['subtitle1','subtitle2'],index=range(num_frames))
-    subtitles['subtitle1'] = ''*len(subtitles)
-    subtitles['subtitle2'] = ''*len(subtitles)
+    #subtitles = pd.DataFrame(columns=['subtitle1','subtitle2'],index=range(num_frames))
+    subtitles = pd.DataFrame(columns=['subtitle1_upper','subtitle1_lower','subtitle2_upper','subtitle2_lower'],index=range(num_frames))
+    subtitles['subtitle1_upper'] = ''*len(subtitles)
+    subtitles['subtitle2_upper'] = ''*len(subtitles)
+    subtitles['subtitle1_lower'] = ''*len(subtitles)
+    subtitles['subtitle2_lower'] = ''*len(subtitles)
+
+    lower_fm = ['hips_l', 'hips_r', 'ankl_l', 'ankl_r']
 
     # Loop on annotations for subject 1
     for idx in range(len(annotations1)):
@@ -51,8 +56,16 @@ def add_subtitles(
         pos = fm_type.find('_start')
         fm_type = fm_type[:pos]
 
-        for idx2 in range(start_frame,end_frame):
-            subtitles['subtitle1'][idx2] += ' '+fm_type
+        if fm_type in lower_fm:
+            for idx2 in range(start_frame,end_frame):
+                subtitles['subtitle1_lower'][idx2] += ' '+fm_type
+        elif fm_type == 'invalid':
+            for idx2 in range(start_frame,end_frame):
+                subtitles['subtitle1_upper'][idx2] = ' ' + fm_type + subtitles['subtitle1_upper'][idx2]
+                subtitles['subtitle1_lower'][idx2] = ' ' + fm_type + subtitles['subtitle1_lower'][idx2]
+        else:
+            for idx2 in range(start_frame,end_frame):
+                subtitles['subtitle1_upper'][idx2] += ' '+fm_type
 
     # Loop on annotations for subject 2
     for idx in range(len(annotations2)):
@@ -65,15 +78,27 @@ def add_subtitles(
         pos = fm_type.find('_start')
         fm_type = fm_type[:pos]
 
-        for idx2 in range(start_frame,end_frame):
-            subtitles['subtitle2'][idx2] += ' '+fm_type
+        if fm_type in lower_fm:
+            for idx2 in range(start_frame,end_frame):
+                subtitles['subtitle2_lower'][idx2] += ' '+fm_type
+        elif fm_type == 'invalid':
+            for idx2 in range(start_frame,end_frame):
+                subtitles['subtitle2_upper'][idx2] = ' '+ fm_type + subtitles['subtitle2_upper'][idx2]
+                subtitles['subtitle2_lower'][idx2] = ' '+ fm_type + subtitles['subtitle2_lower'][idx2]
+        else:
+            for idx2 in range(start_frame,end_frame):
+                subtitles['subtitle2_upper'][idx2] += ' '+fm_type
 
     # Add prefix to subtitles
     for idx in range(len(subtitles)):
-        if len(subtitles['subtitle1'][idx])>0:
-            subtitles['subtitle1'][idx] = 'A1:'+subtitles['subtitle1'][idx]
-        if len(subtitles['subtitle2'][idx])>0:
-            subtitles['subtitle2'][idx] = 'A2:'+subtitles['subtitle2'][idx]
+        if len(subtitles['subtitle1_upper'][idx])>0:
+            subtitles['subtitle1_upper'][idx] = 'A1 upper:'+subtitles['subtitle1_upper'][idx]
+        if len(subtitles['subtitle2_upper'][idx])>0:
+            subtitles['subtitle2_upper'][idx] = 'A2 upper:'+subtitles['subtitle2_upper'][idx]
+        if len(subtitles['subtitle1_lower'][idx])>0:
+            subtitles['subtitle1_lower'][idx] = 'A1 lower:'+subtitles['subtitle1_lower'][idx]
+        if len(subtitles['subtitle2_lower'][idx])>0:
+            subtitles['subtitle2_lower'][idx] = 'A2 lower:'+subtitles['subtitle2_lower'][idx]
     
     end = time()
     print('Subtitles created in %.2f seconds.' % (end-start))
@@ -90,10 +115,14 @@ def add_subtitles(
     start = time()
     for idx in range(num_frames):
         _, frame = video.read()
-        if len(subtitles['subtitle1'][idx])>0:
-            cv2.putText(frame,subtitles['subtitle1'][idx], (int(0.05*W),int(0.70*H)),cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv2.LINE_AA, False)
-        if len(subtitles['subtitle2'][idx])>0:
-            cv2.putText(frame,subtitles['subtitle2'][idx], (int(0.05*W),int(0.72*H)),cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 170, 0), 2, cv2.LINE_AA, False)
+        if len(subtitles['subtitle1_upper'][idx])>0:
+            cv2.putText(frame,subtitles['subtitle1_upper'][idx], (int(0.05*W),int(0.66*H)),cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv2.LINE_AA, False)
+        if len(subtitles['subtitle1_lower'][idx])>0:
+            cv2.putText(frame,subtitles['subtitle1_lower'][idx], (int(0.05*W),int(0.68*H)),cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv2.LINE_AA, False)
+        if len(subtitles['subtitle2_upper'][idx])>0:
+            cv2.putText(frame,subtitles['subtitle2_upper'][idx], (int(0.05*W),int(0.70*H)),cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 170, 0), 2, cv2.LINE_AA, False)
+        if len(subtitles['subtitle2_lower'][idx])>0:
+            cv2.putText(frame,subtitles['subtitle2_lower'][idx], (int(0.05*W),int(0.72*H)),cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 170, 0), 2, cv2.LINE_AA, False)
         new_video.write(frame)
         # # DEBUG: show one frame at a time
         # cv2.imshow("video", frame)
@@ -113,20 +142,22 @@ def add_subtitles(
 ############################################## Main function ###############################################
 if __name__ == '__main__':
     # # CSV containing the events
-    # file_path1 = r'./interrater_disagreement/annotations/Friederike_s033.csv'
-    # file_path2 = r'./interrater_disagreement/annotations/Andrea_s033.csv'
+    # #file_path1 = r'./interrater_disagreement/annotations/Friederike_s033.csv'
+    # file_path1 = r'./interrater_disagreement/annotations/Andrea_s033.csv'
+    # file_path2 = r'./interrater_disagreement/annotations/Margot_s033.csv'
     
     # # Path to video and where to save the result
     # video_path = r'./interrater_disagreement/video/033 – 20220420T123307Z – Lidar_0001.mp4'
-    # save_path = r'./interrater_disagreement/video/annotated_s033.mp4'
+    # save_path = r'./interrater_disagreement/video/annotated_Andrea_Margot_s033.mp4'
 
     # CSV containing the events
-    file_path1 = r'./interrater_disagreement/annotations/Friederike_s036.csv'
-    file_path2 = r'./interrater_disagreement/annotations/Andrea_s036.csv'
+    #file_path1 = r'./interrater_disagreement/annotations/Friederike_s036.csv'
+    file_path1 = r'./interrater_disagreement/annotations/Andrea_s036.csv'
+    file_path2 = r'./interrater_disagreement/annotations/Margot_s036.csv'
     
     # Path to video and where to save the result
     video_path = r'./interrater_disagreement/video/036 – 20220427T121247Z – Lidar_0001.mp4'
-    save_path = r'./interrater_disagreement/video/annotated_s036.mp4'
+    save_path = r'./interrater_disagreement/video/annotated_Andrea_Margot_s036.mp4'
 
     # Plot the events
     add_subtitles(video_path=video_path,annotation_path1=file_path1,annotation_path2=file_path2,save_path=save_path)
