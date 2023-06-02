@@ -10,7 +10,7 @@ import check_FM_annotations as cfma
 # Inputs:
 # - [str] video_path: path to the video to annotate
 # - [str or pd frame] annotation_file1: path to the csv file or pandas frame containing the pairs of events annotated by one clinician
-# - [str or pd frame] annotation_file2: path to the csv file or pandas frame containing the pairs of events annotated by the second clinician
+# - [str or pd frame or None] annotation_file2: path to the csv file or pandas frame containing the pairs of events annotated by the second clinician. If None, only annotations 1 are added to the video
 # - [str] save_path: path to save the annotated video.
 # Outputs:
 # - None
@@ -28,10 +28,11 @@ def add_subtitles(
         annotations1 = pd.read_csv(annotation_file1)
     else: # assumed to be pandas frame
         annotations1 = annotation_file1
-    if isinstance(annotation_file2,str):
-        annotations2 = pd.read_csv(annotation_file2)
-    else: # assumed to be pandas frame
-        annotations2 = annotation_file2
+    if annotation_file2 is not None:
+        if isinstance(annotation_file2,str):
+            annotations2 = pd.read_csv(annotation_file2)
+        else: # assumed to be pandas frame
+            annotations2 = annotation_file2
 
     # Load the video and get its frame rate
     print('Loading the video ...')
@@ -75,26 +76,27 @@ def add_subtitles(
                 subtitles['subtitle1_upper'][idx2] += ' '+fm_type
 
     # Loop on annotations for subject 2
-    for idx in range(len(annotations2)):
-        current_event = annotations2.iloc[idx]
-        start_ts = current_event['start_timestamp']/1000 # Starting timestamp in second
-        start_frame = max(0,round(start_ts*fps)-1) # Starting frame ID
-        end_ts = current_event['stop_timestamp']/1000 # Ending timestamp in second
-        end_frame = min(round(end_ts*fps),num_frames-1) # Ending frame ID
-        fm_type = current_event['start_event']
-        pos = fm_type.find('_start')
-        fm_type = fm_type[:pos]
+    if annotation_file2 is not None:
+        for idx in range(len(annotations2)):
+            current_event = annotations2.iloc[idx]
+            start_ts = current_event['start_timestamp']/1000 # Starting timestamp in second
+            start_frame = max(0,round(start_ts*fps)-1) # Starting frame ID
+            end_ts = current_event['stop_timestamp']/1000 # Ending timestamp in second
+            end_frame = min(round(end_ts*fps),num_frames-1) # Ending frame ID
+            fm_type = current_event['start_event']
+            pos = fm_type.find('_start')
+            fm_type = fm_type[:pos]
 
-        if fm_type in lower_fm:
-            for idx2 in range(start_frame,end_frame):
-                subtitles['subtitle2_lower'][idx2] += ' '+fm_type
-        elif fm_type == 'invalid':
-            for idx2 in range(start_frame,end_frame):
-                subtitles['subtitle2_upper'][idx2] = ' '+ fm_type + subtitles['subtitle2_upper'][idx2]
-                subtitles['subtitle2_lower'][idx2] = ' '+ fm_type + subtitles['subtitle2_lower'][idx2]
-        else:
-            for idx2 in range(start_frame,end_frame):
-                subtitles['subtitle2_upper'][idx2] += ' '+fm_type
+            if fm_type in lower_fm:
+                for idx2 in range(start_frame,end_frame):
+                    subtitles['subtitle2_lower'][idx2] += ' '+fm_type
+            elif fm_type == 'invalid':
+                for idx2 in range(start_frame,end_frame):
+                    subtitles['subtitle2_upper'][idx2] = ' '+ fm_type + subtitles['subtitle2_upper'][idx2]
+                    subtitles['subtitle2_lower'][idx2] = ' '+ fm_type + subtitles['subtitle2_lower'][idx2]
+            else:
+                for idx2 in range(start_frame,end_frame):
+                    subtitles['subtitle2_upper'][idx2] += ' '+fm_type
 
     # Add prefix to subtitles
     for idx in range(len(subtitles)):
@@ -148,30 +150,11 @@ def add_subtitles(
 
 ############################################## Main function ###############################################
 if __name__ == '__main__':
-    # # CSV containing the events
-    # #file_path1 = r'./interrater_disagreement/annotations/Friederike_s033.csv'
-    # file_path1 = r'./interrater_disagreement/annotations/Andrea_s033.csv'
-    # file_path2 = r'./interrater_disagreement/annotations/Margot_s033.csv'
-    
-    # # Path to video and where to save the result
-    # video_path = r'./interrater_disagreement/video/033 – 20220420T123307Z – Lidar_0001.mp4'
-    # save_path = r'./interrater_disagreement/video/annotated_Andrea_Margot_s033.mp4'
-
-    # # CSV containing the events
-    # #file_path1 = r'./interrater_disagreement/annotations/Friederike_s036.csv'
-    # file_path1 = r'./interrater_disagreement/annotations/Andrea_s036.csv'
-    # file_path2 = r'./interrater_disagreement/annotations/Margot_s036.csv'
-    
-    # # Path to video and where to save the result
-    # video_path = r'./interrater_disagreement/video/036 – 20220427T121247Z – Lidar_0001.mp4'
-    # save_path = r'./interrater_disagreement/video/annotated_Andrea_Margot_s036.mp4'
-
-    # # Plot the events
-    # add_subtitles(video_path=video_path,annotation_file1=file_path1,annotation_file2=file_path2,save_path=save_path)
-
+   
     ### Process several videos to subtitle
     # Subjects for which the subtitled videos should be processed (double annotations available)
-    subjects_to_process = ['033','034a','034b','035','036','037','038']
+    #subjects_to_process = ['034a','034b','035','036','037','038']
+    subjects_to_process = ['049','052','053'] 
     
     # Folder containing the CSV annotation files
     annotation_path = r'Z:/Annotations'
@@ -192,84 +175,94 @@ if __name__ == '__main__':
         annotation_folder = os.path.join(annotation_path,subject_id).replace("\\","/")
         annotation_files = [e for e in os.listdir(annotation_folder) if ' – Comments' in e and '.csv' in e]
 
+        # get path to the video
+        video_folder = os.path.join(video_path,subject_id)
+        video_files = [e for e in os.listdir(video_folder) if '.mp4' in e]
+        tmp_video_name = video_files[0]
+        iphone_video_path = os.path.join(video_folder,tmp_video_name)
+
         # check how many raters are there
         nb_raters = len(annotation_files)
 
-        if nb_raters >= 2: # at least two raters provided their annotations for the video
-            # get rater names
-            rater_names = [] 
-            for idx in range(nb_raters):
-                tmp_name = annotation_files[idx]
-                pos1 = tmp_name.find(' – Comments ')
-                pos2 = tmp_name.find('.csv')
-                rater_names += [tmp_name[pos1+len(' – Comments '):pos2]]
+        # get rater names
+        rater_names = [] 
+        for idx in range(nb_raters):
+            tmp_name = annotation_files[idx]
+            pos1 = tmp_name.find(' – Comments ')
+            pos2 = tmp_name.find('.csv')
+            rater_names += [tmp_name[pos1+len(' – Comments '):pos2]]
 
-            # get path to the video
-            video_folder = os.path.join(video_path,subject_id)
-            video_files = [e for e in os.listdir(video_folder) if '.mp4' in e]
-            tmp_video_name = video_files[0]
-            iphone_video_path = os.path.join(video_folder,tmp_video_name)
+        # prepare save folder
+        save_folder = os.path.join(save_path,subject_id)
+        if not os.path.isdir(save_folder):
+            os.makedirs(save_folder)
 
-            # prepare save folder
-            save_folder = os.path.join(save_path,subject_id)
-            if not os.path.isdir(save_folder):
-                os.makedirs(save_folder)
+        if nb_raters == 2:  # nb_raters = 2
+            pos = tmp_video_name.find('.mkv.mp4')
+            save_name = tmp_video_name[:pos]+' - '+rater_names[0]+' '+rater_names[1]+'.mkv.mp4'
+            full_save_path = os.path.join(save_folder,save_name).replace("\\","/")
+            annotation1 = [e for e in annotation_files if rater_names[0] in e]
+            file_path1 = os.path.join(annotation_folder,annotation1[0]).replace("\\","/")
+            annotation2 = [e for e in annotation_files if rater_names[1] in e]
+            file_path2 = os.path.join(annotation_folder,annotation2[0]).replace("\\","/")
+            # Compute tables of correspondencies
+            annotation_table1 = cfma.list_annotated_events(file_path1,time_threshold=60000,res_path='')
+            annotation_table2 = cfma.list_annotated_events(file_path2,time_threshold=60000,res_path='')
+            # Add subtitles to video
+            add_subtitles(video_path=iphone_video_path,annotation_file1=annotation_table1,annotation_file2=annotation_table2,save_path=full_save_path)
 
-            # subtitle the videos for each combination of raters
-            if nb_raters == 2:
-                pos = tmp_video_name.find('.mkv.mp4')
-                save_name = tmp_video_name[:pos]+' - '+rater_names[0]+' '+rater_names[1]+'.mkv.mp4'
-                full_save_path = os.path.join(save_folder,save_name).replace("\\","/")
-                annotation1 = [e for e in annotation_files if rater_names[0] in e]
-                file_path1 = os.path.join(annotation_folder,annotation1[0]).replace("\\","/")
-                annotation2 = [e for e in annotation_files if rater_names[1] in e]
-                file_path2 = os.path.join(annotation_folder,annotation2[0]).replace("\\","/")
-                # Compute tables of correspondencies
-                annotation_table1 = cfma.list_annotated_events(file_path1,time_threshold=60000,res_path='')
-                annotation_table2 = cfma.list_annotated_events(file_path2,time_threshold=60000,res_path='')
-                # Add subtitles to video
-                add_subtitles(video_path=iphone_video_path,annotation_file1=annotation_table1,annotation_file2=annotation_table2,save_path=full_save_path)
+        elif nb_raters == 3: # nb_raters = 3
+            pos = tmp_video_name.find('.mkv.mp4')
+            ### Raters 1 and 2
+            save_name = tmp_video_name[:pos]+' - '+rater_names[0]+' '+rater_names[1]+'.mkv.mp4'
+            full_save_path = os.path.join(save_folder,save_name).replace("\\","/")
+            annotation1 = [e for e in annotation_files if rater_names[0] in e]
+            file_path1 = os.path.join(annotation_folder,annotation1[0]).replace("\\","/")
+            annotation2 = [e for e in annotation_files if rater_names[1] in e]
+            file_path2 = os.path.join(annotation_folder,annotation2[0]).replace("\\","/")
+            # Compute tables of correspondencies
+            annotation_table1 = cfma.list_annotated_events(file_path1,time_threshold=60000,res_path='')
+            annotation_table2 = cfma.list_annotated_events(file_path2,time_threshold=60000,res_path='')
+            # Add subtitles to video
+            add_subtitles(video_path=iphone_video_path,annotation_file1=annotation_table1,annotation_file2=annotation_table2,save_path=full_save_path)
+            ### Raters 1 and 3
+            save_name = tmp_video_name[:pos]+' - '+rater_names[0]+' '+rater_names[2]+'.mkv.mp4'
+            full_save_path = os.path.join(save_folder,save_name).replace("\\","/")
+            annotation1 = [e for e in annotation_files if rater_names[0] in e]
+            file_path1 = os.path.join(annotation_folder,annotation1[0]).replace("\\","/")
+            annotation2 = [e for e in annotation_files if rater_names[2] in e]
+            file_path2 = os.path.join(annotation_folder,annotation2[0]).replace("\\","/")
+            # Compute tables of correspondencies
+            annotation_table1 = cfma.list_annotated_events(file_path1,time_threshold=60000,res_path='')
+            annotation_table2 = cfma.list_annotated_events(file_path2,time_threshold=60000,res_path='')
+            # Add subtitles to video
+            add_subtitles(video_path=iphone_video_path,annotation_file1=annotation_table1,annotation_file2=annotation_table2,save_path=full_save_path)
+            ### Raters 2 and 3
+            save_name = tmp_video_name[:pos]+' - '+rater_names[1]+' '+rater_names[2]+'.mkv.mp4'
+            full_save_path = os.path.join(save_folder,save_name).replace("\\","/")
+            annotation1 = [e for e in annotation_files if rater_names[1] in e]
+            file_path1 = os.path.join(annotation_folder,annotation1[0]).replace("\\","/")
+            annotation2 = [e for e in annotation_files if rater_names[2] in e]
+            file_path2 = os.path.join(annotation_folder,annotation2[0]).replace("\\","/")
+            # Compute tables of correspondencies
+            annotation_table1 = cfma.list_annotated_events(file_path1,time_threshold=60000,res_path='')
+            annotation_table2 = cfma.list_annotated_events(file_path2,time_threshold=60000,res_path='')
+            # Add subtitles to video
+            add_subtitles(video_path=iphone_video_path,annotation_file1=annotation_table1,annotation_file2=annotation_table2,save_path=full_save_path)
 
-            else: # nb_raters = 3
-                pos = tmp_video_name.find('.mkv.mp4')
-                ### Raters 1 and 2
-                save_name = tmp_video_name[:pos]+' - '+rater_names[0]+' '+rater_names[1]+'.mkv.mp4'
-                full_save_path = os.path.join(save_folder,save_name).replace("\\","/")
-                annotation1 = [e for e in annotation_files if rater_names[0] in e]
-                file_path1 = os.path.join(annotation_folder,annotation1[0]).replace("\\","/")
-                annotation2 = [e for e in annotation_files if rater_names[1] in e]
-                file_path2 = os.path.join(annotation_folder,annotation2[0]).replace("\\","/")
-                # Compute tables of correspondencies
-                annotation_table1 = cfma.list_annotated_events(file_path1,time_threshold=60000,res_path='')
-                annotation_table2 = cfma.list_annotated_events(file_path2,time_threshold=60000,res_path='')
-                # Add subtitles to video
-                add_subtitles(video_path=iphone_video_path,annotation_file1=annotation_table1,annotation_file2=annotation_table2,save_path=full_save_path)
-                ### Raters 1 and 3
-                save_name = tmp_video_name[:pos]+' - '+rater_names[0]+' '+rater_names[2]+'.mkv.mp4'
-                full_save_path = os.path.join(save_folder,save_name).replace("\\","/")
-                annotation1 = [e for e in annotation_files if rater_names[0] in e]
-                file_path1 = os.path.join(annotation_folder,annotation1[0]).replace("\\","/")
-                annotation2 = [e for e in annotation_files if rater_names[2] in e]
-                file_path2 = os.path.join(annotation_folder,annotation2[0]).replace("\\","/")
-                # Compute tables of correspondencies
-                annotation_table1 = cfma.list_annotated_events(file_path1,time_threshold=60000,res_path='')
-                annotation_table2 = cfma.list_annotated_events(file_path2,time_threshold=60000,res_path='')
-                # Add subtitles to video
-                add_subtitles(video_path=iphone_video_path,annotation_file1=annotation_table1,annotation_file2=annotation_table2,save_path=full_save_path)
-                ### Raters 2 and 3
-                save_name = tmp_video_name[:pos]+' - '+rater_names[1]+' '+rater_names[2]+'.mkv.mp4'
-                full_save_path = os.path.join(save_folder,save_name).replace("\\","/")
-                annotation1 = [e for e in annotation_files if rater_names[1] in e]
-                file_path1 = os.path.join(annotation_folder,annotation1[0]).replace("\\","/")
-                annotation2 = [e for e in annotation_files if rater_names[2] in e]
-                file_path2 = os.path.join(annotation_folder,annotation2[0]).replace("\\","/")
-                # Compute tables of correspondencies
-                annotation_table1 = cfma.list_annotated_events(file_path1,time_threshold=60000,res_path='')
-                annotation_table2 = cfma.list_annotated_events(file_path2,time_threshold=60000,res_path='')
-                # Add subtitles to video
-                add_subtitles(video_path=iphone_video_path,annotation_file1=annotation_table1,annotation_file2=annotation_table2,save_path=full_save_path)
-
+        elif nb_raters == 1:
+            #print('Warning: subject %s skipped because only one annotation available!' % (subject_id))
+            pos = tmp_video_name.find('.mkv.mp4')
+            save_name = tmp_video_name[:pos]+' - '+rater_names[0]+'.mkv.mp4'
+            full_save_path = os.path.join(save_folder,save_name).replace("\\","/")
+            annotation1 = [e for e in annotation_files if rater_names[0] in e]
+            file_path1 = os.path.join(annotation_folder,annotation1[0]).replace("\\","/")
+            # Compute tables of correspondencies
+            annotation_table1 = cfma.list_annotated_events(file_path1,time_threshold=60000,res_path='')
+            # Add subtitles to video
+            add_subtitles(video_path=iphone_video_path,annotation_file1=annotation_table1,annotation_file2=None,save_path=full_save_path)
+        
         else:
-            print('Warning: subject %s skipped because only one annotation available!' % (subject_id))
+            print('Warning: subject %s skipped because no annotations found!' % (subject_id))
 
 ############################################################################################################
