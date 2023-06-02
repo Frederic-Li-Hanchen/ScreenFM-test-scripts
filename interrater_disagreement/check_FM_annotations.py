@@ -64,8 +64,8 @@ def list_annotated_events(file_path,time_threshold=60000,res_path=''):
             # Looking for the corresponding ending event
             if event_name != 'invalid': # Assumption that start and stop of a FM cannot be separated by more than threshold ms
                 possible_end_events = df_end_events[(df_end_events['timestamp']>df_events.loc[idx]['timestamp']) & (df_end_events['timestamp']<=df_events.loc[idx]['timestamp']+time_threshold)]
-            else: # Invalid periods can be of arbitrary duration
-                possible_end_events = df_end_events
+            else: # Invalid periods can be of arbitrary duration as long as the end event is happening after the start event 
+                possible_end_events = df_end_events[df_end_events['timestamp']>df_events.loc[idx]['timestamp']]
             stop_idx = 0  
             #print('         Length possible end events: %d' % len(possible_end_events))
             while end_event == '' and stop_idx < len(possible_end_events): # The first matching event found in the list of possible end event is considered as stopping event 
@@ -82,10 +82,12 @@ def list_annotated_events(file_path,time_threshold=60000,res_path=''):
 
             # If end event found, remove both start and end events from the lists of unprocessed and end events.
             if end_event != '':
+                # # DEBUG
+                # print(end_event_idx)
                 # if end_event_idx not in not_processed:
                 #     st()
                 df_end_events = df_end_events.drop(index=end_event_idx)
-                not_processed.remove(end_event_idx) 
+                not_processed.remove(end_event_idx)
                 # Add event to list of events
                 events += [[df_events.loc[idx]['content'], df_events.loc[idx]['timestamp'],end_event+'_stop',end_event_timestamp, end_event_timestamp-df_events.loc[idx]['timestamp']]]
             else:
