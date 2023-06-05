@@ -118,8 +118,10 @@ def add_subtitles(
 
     # Assign subtitles to video and save video
     video.set(cv2.CAP_PROP_POS_FRAMES, 0) # Set current frame back to 0
-    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-    new_video = cv2.VideoWriter(save_path,fourcc,fps,(H,W)) # TODO: check this
+    #fourcc = cv2.VideoWriter_fourcc(*'mp4v') # NOTE: test webM format
+    fourcc = cv2.VideoWriter_fourcc('V','P','8','0')
+    #fourcc =  cv2.VideoWriter_fourcc(*'VP90') # NOTE: to test
+    new_video = cv2.VideoWriter(save_path,fourcc,fps,(H,W))
     print('Assigning subtitles to video ...')
     start = time()
     for idx in range(num_frames):
@@ -154,7 +156,8 @@ if __name__ == '__main__':
     ### Process several videos to subtitle
     # Subjects for which the subtitled videos should be processed (double annotations available)
     #subjects_to_process = ['034a','034b','035','036','037','038']
-    subjects_to_process = ['049','052','053'] 
+    ### NOTE: for subjects with Kinect annotations, check again placement of subtitles!
+    subjects_to_process = ['036'] 
     
     # Folder containing the CSV annotation files
     annotation_path = r'Z:/Annotations'
@@ -178,7 +181,7 @@ if __name__ == '__main__':
         # get path to the video
         video_folder = os.path.join(video_path,subject_id)
         video_files = [e for e in os.listdir(video_folder) if '.mp4' in e]
-        tmp_video_name = video_files[0]
+        tmp_video_name = video_files[-1] # Load the last video (assumed to be the 'real' run) if several are available
         iphone_video_path = os.path.join(video_folder,tmp_video_name)
 
         # check how many raters are there
@@ -198,8 +201,12 @@ if __name__ == '__main__':
             os.makedirs(save_folder)
 
         if nb_raters == 2:  # nb_raters = 2
-            pos = tmp_video_name.find('.mkv.mp4')
-            save_name = tmp_video_name[:pos]+' - '+rater_names[0]+' '+rater_names[1]+'.mkv.mp4'
+            if '.mkv.mp4' in tmp_video_name:
+                pos = tmp_video_name.find('.mkv.mp4')
+            else:
+                pos = tmp_video_name.find('.mp4')
+            #save_name = tmp_video_name[:pos]+' - '+rater_names[0]+' '+rater_names[1]+'.mkv.mp4' # NOTE: test with webm format
+            save_name = tmp_video_name[:pos]+' - '+rater_names[0]+' '+rater_names[1]+'.webm'
             full_save_path = os.path.join(save_folder,save_name).replace("\\","/")
             annotation1 = [e for e in annotation_files if rater_names[0] in e]
             file_path1 = os.path.join(annotation_folder,annotation1[0]).replace("\\","/")
@@ -212,9 +219,13 @@ if __name__ == '__main__':
             add_subtitles(video_path=iphone_video_path,annotation_file1=annotation_table1,annotation_file2=annotation_table2,save_path=full_save_path)
 
         elif nb_raters == 3: # nb_raters = 3
-            pos = tmp_video_name.find('.mkv.mp4')
+            if '.mkv.mp4' in tmp_video_name:
+                pos = tmp_video_name.find('.mkv.mp4')
+            else:
+                pos = tmp_video_name.find('.mp4')
             ### Raters 1 and 2
-            save_name = tmp_video_name[:pos]+' - '+rater_names[0]+' '+rater_names[1]+'.mkv.mp4'
+            #save_name = tmp_video_name[:pos]+' - '+rater_names[0]+' '+rater_names[1]+'.mkv.mp4' # NOTE: test with webm format
+            save_name = tmp_video_name[:pos]+' - '+rater_names[0]+' '+rater_names[1]+'.webm'
             full_save_path = os.path.join(save_folder,save_name).replace("\\","/")
             annotation1 = [e for e in annotation_files if rater_names[0] in e]
             file_path1 = os.path.join(annotation_folder,annotation1[0]).replace("\\","/")
@@ -226,7 +237,8 @@ if __name__ == '__main__':
             # Add subtitles to video
             add_subtitles(video_path=iphone_video_path,annotation_file1=annotation_table1,annotation_file2=annotation_table2,save_path=full_save_path)
             ### Raters 1 and 3
-            save_name = tmp_video_name[:pos]+' - '+rater_names[0]+' '+rater_names[2]+'.mkv.mp4'
+            #save_name = tmp_video_name[:pos]+' - '+rater_names[0]+' '+rater_names[2]+'.mkv.mp4' # NOTE: test with webm format
+            save_name = tmp_video_name[:pos]+' - '+rater_names[0]+' '+rater_names[2]+'.webm'
             full_save_path = os.path.join(save_folder,save_name).replace("\\","/")
             annotation1 = [e for e in annotation_files if rater_names[0] in e]
             file_path1 = os.path.join(annotation_folder,annotation1[0]).replace("\\","/")
@@ -238,7 +250,8 @@ if __name__ == '__main__':
             # Add subtitles to video
             add_subtitles(video_path=iphone_video_path,annotation_file1=annotation_table1,annotation_file2=annotation_table2,save_path=full_save_path)
             ### Raters 2 and 3
-            save_name = tmp_video_name[:pos]+' - '+rater_names[1]+' '+rater_names[2]+'.mkv.mp4'
+            #save_name = tmp_video_name[:pos]+' - '+rater_names[1]+' '+rater_names[2]+'.mkv.mp4' # NOTE: test with webm format
+            save_name = tmp_video_name[:pos]+' - '+rater_names[1]+' '+rater_names[2]+'.webm'
             full_save_path = os.path.join(save_folder,save_name).replace("\\","/")
             annotation1 = [e for e in annotation_files if rater_names[1] in e]
             file_path1 = os.path.join(annotation_folder,annotation1[0]).replace("\\","/")
@@ -251,9 +264,12 @@ if __name__ == '__main__':
             add_subtitles(video_path=iphone_video_path,annotation_file1=annotation_table1,annotation_file2=annotation_table2,save_path=full_save_path)
 
         elif nb_raters == 1:
-            #print('Warning: subject %s skipped because only one annotation available!' % (subject_id))
-            pos = tmp_video_name.find('.mkv.mp4')
-            save_name = tmp_video_name[:pos]+' - '+rater_names[0]+'.mkv.mp4'
+            if '.mkv.mp4' in tmp_video_name:
+                pos = tmp_video_name.find('.mkv.mp4')
+            else:
+                pos = tmp_video_name.find('.mp4')
+            #save_name = tmp_video_name[:pos]+' - '+rater_names[0]+'.mkv.mp4' # NOTE: test with webm format
+            save_name = tmp_video_name[:pos]+' - '+rater_names[0]+'.webm'
             full_save_path = os.path.join(save_folder,save_name).replace("\\","/")
             annotation1 = [e for e in annotation_files if rater_names[0] in e]
             file_path1 = os.path.join(annotation_folder,annotation1[0]).replace("\\","/")
