@@ -124,22 +124,43 @@ def add_subtitles(
     new_video = cv2.VideoWriter(save_path,fourcc,fps,(H,W))
     print('Assigning subtitles to video ...')
     start = time()
-    for idx in range(num_frames):
-        _, frame = video.read()
-        if len(subtitles['subtitle1_upper'][idx])>0:
-            cv2.putText(frame,subtitles['subtitle1_upper'][idx], (int(0.05*W),int(0.66*H)),cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv2.LINE_AA, False)
-        if len(subtitles['subtitle1_lower'][idx])>0:
-            cv2.putText(frame,subtitles['subtitle1_lower'][idx], (int(0.05*W),int(0.68*H)),cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv2.LINE_AA, False)
-        if len(subtitles['subtitle2_upper'][idx])>0:
-            cv2.putText(frame,subtitles['subtitle2_upper'][idx], (int(0.05*W),int(0.70*H)),cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 170, 0), 2, cv2.LINE_AA, False)
-        if len(subtitles['subtitle2_lower'][idx])>0:
-            cv2.putText(frame,subtitles['subtitle2_lower'][idx], (int(0.05*W),int(0.72*H)),cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 170, 0), 2, cv2.LINE_AA, False)
-        new_video.write(frame)
-        # # DEBUG: show one frame at a time
-        # cv2.imshow("video", frame)
-        # key = cv2.waitKey(0)
-        # while key not in [ord('q'), ord('k')]:
-        #     key = cv2.waitKey(0)
+    if H > W: # iPhone video
+        for idx in range(num_frames):
+            _, frame = video.read()
+            if len(subtitles['subtitle1_upper'][idx])>0:
+                cv2.putText(frame,subtitles['subtitle1_upper'][idx], (int(0.05*W),int(0.66*H)),cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv2.LINE_AA, False)
+            if len(subtitles['subtitle1_lower'][idx])>0:
+                cv2.putText(frame,subtitles['subtitle1_lower'][idx], (int(0.05*W),int(0.68*H)),cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2, cv2.LINE_AA, False)
+            if len(subtitles['subtitle2_upper'][idx])>0:
+                cv2.putText(frame,subtitles['subtitle2_upper'][idx], (int(0.05*W),int(0.70*H)),cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 170, 0), 2, cv2.LINE_AA, False)
+            if len(subtitles['subtitle2_lower'][idx])>0:
+                cv2.putText(frame,subtitles['subtitle2_lower'][idx], (int(0.05*W),int(0.72*H)),cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 170, 0), 2, cv2.LINE_AA, False)
+            new_video.write(frame)
+            # # DEBUG: show one frame at a time
+            # frame2 = cv2.resize(frame, (960,720))
+            # cv2.imshow("video", frame2)
+            # key = cv2.waitKey(0)
+            # while key not in [ord('q'), ord('k')]:
+            #     key = cv2.waitKey(0)
+    else: # Kinect video
+        for idx in range(num_frames):
+            _, frame = video.read()
+            # Write subtitles
+            if len(subtitles['subtitle1_upper'][idx])>0:
+                cv2.putText(frame,subtitles['subtitle1_upper'][idx], (int(0.03*W), int(1.55*H)),cv2.FONT_HERSHEY_SIMPLEX, 1, (246, 250, 2), 2, cv2.LINE_AA, False)
+            if len(subtitles['subtitle1_lower'][idx])>0:
+                cv2.putText(frame,subtitles['subtitle1_lower'][idx], (int(0.03*W), int(1.6*H)),cv2.FONT_HERSHEY_SIMPLEX, 1, (246, 250, 2), 2, cv2.LINE_AA, False)
+            if len(subtitles['subtitle2_upper'][idx])>0:
+                cv2.putText(frame,subtitles['subtitle2_upper'][idx], (int(0.03*W), int(1.65*H)),cv2.FONT_HERSHEY_SIMPLEX, 1, (169, 242, 245), 2, cv2.LINE_AA, False)
+            if len(subtitles['subtitle2_lower'][idx])>0:
+                cv2.putText(frame,subtitles['subtitle2_lower'][idx], (int(0.03*W), int(1.7*H)),cv2.FONT_HERSHEY_SIMPLEX, 1, (169, 242, 245), 2, cv2.LINE_AA, False)
+            new_video.write(frame)
+            # # DEBUG: show one frame at a time
+            # frame2 = cv2.resize(frame, (360,640))
+            # cv2.imshow("video", frame2)
+            # key = cv2.waitKey(0)
+            # while key not in [ord('q'), ord('k')]:
+            #     key = cv2.waitKey(0)
     end = time()
     print('Subtitles assigned to video in %.2f seconds.' % (end-start))
     print('Subtitled video saved in %s' % (save_path))
@@ -157,7 +178,7 @@ if __name__ == '__main__':
     # Subjects for which the subtitled videos should be processed (double annotations available)
     #subjects_to_process = ['034a','034b','035','036','037','038']
     ### NOTE: for subjects with Kinect annotations, check again placement of subtitles!
-    subjects_to_process = ['036'] 
+    subjects_to_process = ['028'] 
     
     # Folder containing the CSV annotation files
     annotation_path = r'Z:/Annotations'
